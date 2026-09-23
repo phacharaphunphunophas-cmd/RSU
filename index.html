@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Opportunity Matching Platform - กรุงเทพมหานคร</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #map { height: 420px; width: 100%; border-radius: 1.5rem; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 pb-16">
+
+    <!-- NAVIGATION BAR -->
+    <nav class="bg-emerald-800 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Brand Concept -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="showSection('hero-section')">
+                    <div class="p-2 bg-emerald-700 rounded-xl shadow-inner">
+                        <i class="fa-solid fa-handshake-angle text-2xl text-amber-300"></i>
+                    </div>
+                    <div>
+                        <span class="font-extrabold text-lg tracking-wide block leading-none">Opportunity Match</span>
+                        <span class="text-xs text-emerald-200">นวัตกรรมเพื่อโอกาสและความเท่าเทียมในชุมชน (กรุงเทพฯ)</span>
+                    </div>
+                </div>
+                
+                <!-- Main Nav Links -->
+                <div class="hidden md:flex items-center space-x-2 text-sm font-medium">
+                    <button onclick="showSection('matching-section')" class="hover:bg-emerald-700 px-3 py-2 rounded-lg transition"><i class="fa-solid fa-bullseye text-amber-300 mr-1.5"></i> ระบบจับคู่โอกาส</button>
+                    <button onclick="showSection('listings-section')" class="hover:bg-emerald-700 px-3 py-2 rounded-lg transition"><i class="fa-solid fa-list-ul mr-1.5"></i> ทรัพยากรชุมชน</button>
+                    <button onclick="showSection('map-section')" class="hover:bg-emerald-700 px-3 py-2 rounded-lg transition"><i class="fa-solid fa-map-location-dot mr-1.5"></i> แผนที่ กทม.</button>
+                    <button onclick="showSection('health-section')" class="hover:bg-emerald-700 px-3 py-2 rounded-lg transition"><i class="fa-solid fa-heart-pulse mr-1.5"></i> สุขภาพ/สิทธิประโยชน์</button>
+                </div>
+
+                <!-- Auth Buttons (Hidden when logged in) -->
+                <div class="hidden items-center space-x-3" id="auth-buttons">
+                    <button onclick="showSection('login-section')" class="bg-emerald-900 hover:bg-emerald-950 px-4 py-2 rounded-xl text-sm font-medium transition">เข้าสู่ระบบ</button>
+                    <button onclick="showSection('register-section')" class="bg-amber-400 hover:bg-amber-500 text-slate-900 px-4 py-2 rounded-xl text-sm font-bold shadow transition">สมัครสมาชิก</button>
+                </div>
+
+                <!-- User Profile Menu (Default Mocked Active Login) -->
+                <div class="flex items-center space-x-3" id="user-menu">
+                    <button onclick="showSection('dashboard-section')" class="bg-emerald-700 hover:bg-emerald-600 px-3 py-1.5 rounded-xl text-sm flex items-center gap-2 border border-emerald-600">
+                        <i class="fa-solid fa-circle-user text-lg text-amber-300"></i>
+                        <span id="user-display-name">สมชาย ชุมชนดี (พญาไท กทม.)</span>
+                    </button>
+                    <button onclick="logoutMock()" title="สลับสิทธิ์ / ออกจากระบบ" class="text-emerald-200 hover:text-white p-2 text-sm"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ALERT BANNER -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div id="alert-banner" class="hidden p-4 rounded-2xl text-sm font-medium flex justify-between items-center shadow-sm"></div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+
+        <!-- 1. HERO SECTION -->
+        <section id="hero-section" class="py-6">
+            <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden mb-8">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-amber-400 text-slate-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4 inline-block">Social Innovation Platform</span>
+                    <h1 class="text-3xl sm:text-5xl font-extrabold mb-4 leading-tight">ทรัพยากรของคนหนึ่ง อาจเป็นโอกาสของอีกคนหนึ่ง</h1>
+                    <p class="text-emerald-100 text-base sm:text-lg mb-8 leading-relaxed">ระบบจับคู่ข้อจำกัดของบุคคลกับทรัพยากรและโอกาสในชุมชนพื้นที่กรุงเทพมหานคร เพื่อยกระดับคุณภาพชีวิต ลดความเหลื่อมล้ำอย่างยั่งยืน</p>
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="showSection('create-listing-section')" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-6 py-3.5 rounded-2xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus-circle text-lg"></i> แบ่งปัน / ประกาศโอกาส
+                        </button>
+                        <button onclick="showSection('matching-section')" class="bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3.5 rounded-2xl border border-white/20 backdrop-blur-sm transition flex items-center gap-2">
+                            <i class="fa-solid fa-bullseye text-amber-300 text-lg"></i> ค้นหาโอกาสที่ตรงกับคุณ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality of Life Pillars -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-red-100 text-red-600 rounded-2xl"><i class="fa-solid fa-heart-pulse text-2xl"></i></div>
+                    <div><h3 class="font-bold text-slate-800">สุขภาพดี</h3><p class="text-xs text-slate-500">เข้าถึงอาหาร สุขภาวะ สิทธิสุขภาพ</p></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-2xl"><i class="fa-solid fa-briefcase text-2xl"></i></div>
+                    <div><h3 class="font-bold text-slate-800">มั่นคง</h3><p class="text-xs text-slate-500">สร้างงาน สร้างอาชีพ รายได้ประหยัด</p></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-emerald-100 text-emerald-600 rounded-2xl"><i class="fa-solid fa-shield-halved text-2xl"></i></div>
+                    <div><h3 class="font-bold text-slate-800">ปลอดภัย</h3><p class="text-xs text-slate-500">ชุมชนพึ่งพาและแลกเปลี่ยนความช่วยเหลือ</p></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-amber-100 text-amber-600 rounded-2xl"><i class="fa-solid fa-graduation-cap text-2xl"></i></div>
+                    <div><h3 class="font-bold text-slate-800">ได้รับโอกาส</h3><p class="text-xs text-slate-500">แบ่งปันและพัฒนาทักษะใหม่ๆ</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. LOGIN & REGISTER -->
+        <section id="login-section" class="hidden max-w-md mx-auto py-10">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-md">
+                <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">เข้าสู่ระบบ</h2>
+                <form id="login-form" onsubmit="handleLoginMock(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">อีเมล</label>
+                        <input type="email" id="login-email" value="somchai@bangkok.org" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">รหัสผ่าน</label>
+                        <input type="password" id="login-password" value="123456" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition shadow">เข้าสู่ระบบ</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="register-section" class="hidden max-w-lg mx-auto py-8">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-md">
+                <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">ลงทะเบียนสมาชิก</h2>
+                <form id="register-form" onsubmit="handleRegisterMock(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">ชื่อที่แสดงในระบบ</label>
+                        <input type="text" id="reg-name" required placeholder="เช่น สมหญิง ชุมชนห้วยขวาง" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">อีเมล</label>
+                        <input type="email" id="reg-email" required placeholder="email@example.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">เขต / แขวง (กรุงเทพฯ)</label>
+                            <input type="text" id="reg-location" placeholder="เช่น เขตห้วยขวาง กรุงเทพฯ" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">ประเภทผู้ใช้หลัก</label>
+                            <select id="reg-role" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                                <option value="seeker">ผู้ต้องการโอกาส (Seeker)</option>
+                                <option value="provider">ผู้แบ่งปัน/ผู้ขาย (Provider)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition shadow">สมัครและเข้าใช้งานทันที</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 3. MATCHING ENGINE SECTION -->
+        <section id="matching-section" class="hidden">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye text-emerald-600"></i> ระบบประมวลผลจับคู่ความต้องการ (Matching Engine)
+                    </h2>
+                    <p class="text-slate-500 text-sm mt-1">คำนวณ Match Score จริงตามอัลกอริทึมจากข้อมูลตรงกัน งบประมาณ และพื้นที่กรุงเทพฯ</p>
+                </div>
+                <button onclick="runMatchingEngine()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 transition shadow-sm">
+                    <i class="fa-solid fa-arrows-rotate"></i> คำนวณความเหมาะสมใหม่
+                </button>
+            </div>
+
+            <div id="matching-results" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Dynamic Match Cards -->
+            </div>
+        </section>
+
+        <!-- 4. LISTINGS & CREATE LISTING -->
+        <section id="listings-section" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">ทรัพยากรและโอกาสในกรุงเทพฯ</h2>
+                    <p class="text-slate-500 text-sm">รายการประกาศจริงจากสมาชิกและองค์กรในพื้นที่กรุงเทพมหานคร</p>
+                </div>
+                <button onclick="showSection('create-listing-section')" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> ประกาศโอกาสใหม่
+                </button>
+            </div>
+            
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 mb-6 flex flex-wrap gap-4 items-center">
+                <span class="text-sm font-semibold text-slate-600"><i class="fa-solid fa-filter mr-1"></i> กรองประเภท:</span>
+                <select id="filter-type" onchange="renderListings()" class="px-3 py-1.5 border border-slate-300 rounded-xl text-sm bg-white outline-none">
+                    <option value="all">ทุกประเภทประกาศ</option>
+                    <option value="product">สินค้า / อาหารส่วนเกิน</option>
+                    <option value="job">งาน / จ้างงาน</option>
+                    <option value="skill">ทักษะ / การสอน</option>
+                    <option value="service">บริการช่วยเหลือ</option>
+                    <option value="exchange">การแลกเปลี่ยน</option>
+                </select>
+            </div>
+
+            <div id="listings-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic Listings -->
+            </div>
+        </section>
+
+        <section id="create-listing-section" class="hidden max-w-2xl mx-auto">
+            <div class="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-md">
+                <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600"></i> สร้างประกาศ / เพิ่มทรัพยากรสู่ชุมชน
+                </h2>
+                <form id="create-listing-form" onsubmit="handleCreateListing(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">หัวข้อประกาศ</label>
+                        <input type="text" id="list-title" required placeholder="เช่น อาหารกล่องส่วนเกินราคาประหยัด 20 บาท หรือ สอนภาษาอังกฤษพื้นฐาน" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">ประเภททรัพยากร</label>
+                            <select id="list-type" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none bg-white">
+                                <option value="product">สินค้า / อาหาร</option>
+                                <option value="job">งาน / จ้างงาน</option>
+                                <option value="skill">ทักษะ / ความรู้</option>
+                                <option value="service">บริการช่วยเหลือ</option>
+                                <option value="exchange">ของ/ทักษะแลกเปลี่ยน</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">ค่าใช้จ่าย / ค่าตอบแทน (บาท)</label>
+                            <input type="number" id="list-price" value="0" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-slate-700">รายละเอียดเพิ่มเติม</label>
+                        <textarea id="list-desc" rows="3" required placeholder="ระบุเงื่อนไข เวลา หรือรายละเอียดที่ผู้อื่นควรทราบ..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">เขต / พื้นที่ (กรุงเทพฯ)</label>
+                            <input type="text" id="list-location" required placeholder="เช่น เขตพญาไท กรุงเทพฯ" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">เบอร์ติดต่อ / ช่องทางติดต่อ</label>
+                            <input type="text" id="list-contact" required placeholder="เช่น 081-xxx-xxxx หรือ Line ID" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition shadow">บันทึกสร้างประกาศจริง</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 5. COMMUNITY MAP -->
+        <section id="map-section" class="hidden">
+            <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 mb-1">แผนที่โอกาสและทรัพยากร (กรุงเทพมหานคร)</h2>
+                <p class="text-slate-500 text-sm mb-4">แสดงตำแหน่งหมุดจริงของสินค้า งาน บริการ และความช่วยเหลือที่พร้อมให้บริการในเขตกรุงเทพฯ</p>
+                <div id="map" class="shadow-md"></div>
+            </div>
+        </section>
+
+        <!-- 6. HEALTH & QUALITY OF LIFE -->
+        <section id="health-section" class="hidden">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">สุขภาพและสิทธิประโยชน์ชุมชน (กรุงเทพฯ)</h2>
+                <p class="text-slate-500 text-sm">ค้นหาหน่วยบริการและสิทธิสุขภาพภาครัฐ/ชุมชนที่ตรวจสอบอ้างอิงได้จริง</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <span class="text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-bold">สิทธิสุขภาพ กทม.</span>
+                    <h3 class="text-lg font-bold text-slate-800 mt-3">สิทธิหลักประกันสุขภาพแห่งชาติ (บัตรทอง 30 บาท)</h3>
+                    <p class="text-slate-600 text-sm mt-2 leading-relaxed">เข้าถึงศูนย์บริการสาธารณสุข กทม. 69 แห่ง และโรงพยาบาลในเครือข่ายทั่วกรุงเทพมหานคร</p>
+                    <div class="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400 flex justify-between">
+                        <span>อ้างอิง: สำนักอนามัย กรุงเทพมหานคร / สปสช.</span>
+                        <span>อัปเดต: 2026</span>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition">
+                    <span class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold">สายด่วนให้คำปรึกษา</span>
+                    <h3 class="text-lg font-bold text-slate-800 mt-3">สายด่วนสุขภาพจิต 1323 & ศูนย์ BMA 1555</h3>
+                    <p class="text-slate-600 text-sm mt-2 leading-relaxed">บริการให้คำปรึกษาดูแลสุขภาวะทางจิตใจ และแจ้งประสานงานช่วยเหลือในชุมชน กทม. ตลอด 24 ชม.</p>
+                    <div class="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-400 flex justify-between">
+                        <span>อ้างอิง: กรมสุขภาพจิต / กรุงเทพมหานคร</span>
+                        <span>อัปเดต: 2026</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. USER DASHBOARD -->
+        <section id="dashboard-section" class="hidden">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">แดชบอร์ดจัดการส่วนบุคคล (Opportunity Dashboard)</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+                    <div class="text-slate-500 text-sm font-semibold">ประกาศที่ฉันสร้างไว้</div>
+                    <div id="dash-my-listings-count" class="text-4xl font-extrabold text-emerald-700 mt-2">0</div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+                    <div class="text-slate-500 text-sm font-semibold">คะแนนความน่าเชื่อถือ (Trust Score)</div>
+                    <div class="text-4xl font-extrabold text-amber-500 mt-2">4.9 <span class="text-xs font-normal text-slate-400">(จาก 12 รีวิว)</span></div>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+                    <div class="text-slate-500 text-sm font-semibold">โอกาสที่เข้าถึงสำเร็จ</div>
+                    <div class="text-4xl font-extrabold text-blue-600 mt-2">3 รายการ</div>
+                </div>
+            </div>
+
+            <!-- Profile Matching Preferences -->
+            <div class="bg-white p-8 rounded-3xl border border-slate-200/80 shadow-sm mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">การตั้งค่าความต้องการและทักษะ (สำหรับ Matching Engine)</h3>
+                    <button onclick="resetAllDataToBangkok()" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-xl text-xs transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> รีเซตข้อมูลทั้งหมดเป็น กทม.
+                    </button>
+                </div>
+                <form id="profile-settings-form" onsubmit="saveProfileSettings(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">สิ่งที่ฉันกำลังต้องการ / มองหา</label>
+                            <input type="text" id="prof-need" placeholder="เช่น อาหารราคาประหยัด, งานพาร์ทไทม์ทำอาหาร" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">ทักษะ / สิ่งที่ฉันมีพร้อมแบ่งปัน</label>
+                            <input type="text" id="prof-skill" placeholder="เช่น สอนภาษาอังกฤษ, ทักษะงานช่าง" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">งบประมาณที่มี / ตั้งไว้ (บาท)</label>
+                            <input type="number" id="prof-budget" value="100" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-slate-700">ระยะทางที่เดินทางได้สะดวก (กิโลเมตร)</label>
+                            <input type="number" id="prof-distance" value="5" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition shadow">อัปเดตข้อมูลเงื่อนไขส่วนตัว</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 8. ADMIN DASHBOARD -->
+        <section id="admin-section" class="hidden">
+            <div class="bg-slate-900 text-white p-6 rounded-3xl mb-6 flex justify-between items-center shadow-md">
+                <div>
+                    <h2 class="text-2xl font-bold">Admin Management Dashboard</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">ระบบผู้ดูแลชุมชนสำหรับตรวจสอบและจัดการประกาศผิดกฎในเขต กทม.</p>
+                </div>
+                <span class="bg-red-500 text-white text-xs px-3 py-1.5 rounded-full font-bold">Community Moderator</span>
+            </div>
+            
+            <div id="admin-listings-list" class="space-y-4">
+                <!-- Dynamic Admin List -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- APPLICATION LOGIC ENGINE -->
+    <script>
+        // Bangkok Coordinates Base Center: 13.7563, 100.5018
+        const bkkSeedData = [
+            {
+                id: "bkk_1",
+                userId: "user_001",
+                authorName: "ร้านอาหารป้าป้อม ชุมชนพญาไท",
+                title: "ข้าวกล่องส่วนเกินคุณภาพดี ลดราคา 50%",
+                type: "product",
+                price: 25,
+                description: "อาหารทำสดใหม่เหลือจากการจำหน่ายรอบเย็น เหมาะสำหรับผู้ต้องการประหยัดค่าใช้จ่าย",
+                location: "เขตพญาไท กรุงเทพฯ",
+                contact: "081-111-2222",
+                lat: 13.7800,
+                lng: 100.5400
+            },
+            {
+                id: "bkk_2",
+                userId: "user_002",
+                authorName: "สมชาย ชุมชนดี",
+                title: "สอนคอมพิวเตอร์และภาษาอังกฤษพื้นฐานฟรี",
+                type: "skill",
+                price: 0,
+                description: "มีทักษะด้านไอที ยินดีสอนเสริมความรู้ให้นักเรียนหรือผู้ว่างงานทุกวันเสาร์ช่วงบ่าย",
+                location: "เขตพญาไท กรุงเทพฯ",
+                contact: "Line ID: somchai_dev",
+                lat: 13.7750,
+                lng: 100.5350
+            },
+            {
+                id: "bkk_3",
+                userId: "user_003",
+                authorName: "ร้านซ่อมมอเตอร์ไซค์ลุงชัย ห้วยขวาง",
+                title: "รับสมัครช่างฝึกหัด / งานพาร์ทไทม์ช่วงเย็น",
+                type: "job",
+                price: 300,
+                description: "รับคนช่วยงานช่วง 17.00 - 20.00 น. ไม่จำเป็นต้องมีประสบการณ์ พร้อมสอนงานให้",
+                location: "เขตห้วยขวาง กรุงเทพฯ",
+                contact: "089-999-8888",
+                lat: 13.7780,
+                lng: 100.5740
+            },
+            {
+                id: "bkk_4",
+                userId: "user_004",
+                authorName: "กลุ่มแบ่งปันสิ่งของปทุมวัน",
+                title: "เสื้อผ้ามือสองและอุปกรณ์เรียนสภาพดีพร้อมมอบฟรี",
+                type: "product",
+                price: 0,
+                description: "มีชุดนักเรียนและอุปกรณ์การเรียนสภาพดี ต้องการส่งต่อให้ผู้ที่กำลังต้องการใช้งาน",
+                location: "เขตปทุมวัน กรุงเทพฯ",
+                contact: "082-333-4444",
+                lat: 13.7460,
+                lng: 100.5340
+            }
+        ];
+
+        // Active Application State (Reset / Initialize with BKK User)
+        let currentUser = {
+            uid: "user_002",
+            displayName: "สมชาย ชุมชนดี (พญาไท กทม.)",
+            need: "อาหาร",
+            skill: "คอมพิวเตอร์",
+            budget: 100,
+            location: "เขตพญาไท กรุงเทพฯ"
+        };
+
+        let activeListings = [];
+        let leafletMap = null;
+
+        // Initialize App State on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check if existing stored data needs update or reset to Bangkok
+            const storedUser = localStorage.getItem('opportunity_user');
+            if (!storedUser || !storedUser.includes('กรุงเทพ')) {
+                resetAllDataToBangkok();
+            } else {
+                currentUser = JSON.parse(storedUser);
+                activeListings = JSON.parse(localStorage.getItem('opportunity_listings')) || bkkSeedData;
+            }
+
+            updateUserUI();
+            fetchAndRenderListings();
+            
+            // Set initial input preferences
+            document.getElementById('prof-need').value = currentUser.need || "";
+            document.getElementById('prof-skill').value = currentUser.skill || "";
+            document.getElementById('prof-budget').value = currentUser.budget || 0;
+        });
+
+        window.resetAllDataToBangkok = function() {
+            currentUser = {
+                uid: "user_002",
+                displayName: "สมชาย ชุมชนดี (พญาไท กทม.)",
+                need: "อาหาร",
+                skill: "คอมพิวเตอร์",
+                budget: 100,
+                location: "เขตพญาไท กรุงเทพฯ"
+            };
+            activeListings = [...bkkSeedData];
+            saveStateToStorage();
+            updateUserUI();
+            fetchAndRenderListings();
+            if (leafletMap) {
+                leafletMap.remove();
+                leafletMap = null;
+            }
+            showAlert("รีเซตข้อมูลในระบบและแผนที่เรียบร้อยแล้ว (พิกัดกรุงเทพมหานคร)");
+        };
+
+        function saveStateToStorage() {
+            localStorage.setItem('opportunity_user', JSON.stringify(currentUser));
+            localStorage.setItem('opportunity_listings', JSON.stringify(activeListings));
+        }
+
+        function updateUserUI() {
+            const userMenu = document.getElementById('user-menu');
+            const authBtns = document.getElementById('auth-buttons');
+            const nameEl = document.getElementById('user-display-name');
+
+            if (currentUser) {
+                userMenu.classList.remove('hidden');
+                userMenu.classList.add('flex');
+                authBtns.classList.add('hidden');
+                nameEl.innerText = currentUser.displayName;
+            } else {
+                userMenu.classList.add('hidden');
+                authBtns.classList.remove('hidden');
+                authBtns.classList.add('flex');
+            }
+        }
+
+        // Navigation Controller
+        window.showSection = function(sectionId) {
+            const sections = [
+                'hero-section', 'login-section', 'register-section', 
+                'matching-section', 'listings-section', 'create-listing-section', 
+                'map-section', 'health-section', 'dashboard-section', 'admin-section'
+            ];
+            sections.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden');
+            });
+            
+            const target = document.getElementById(sectionId);
+            if(target) target.classList.remove('hidden');
+
+            if(sectionId === 'map-section') initLeafletMap();
+            if(sectionId === 'listings-section') fetchAndRenderListings();
+            if(sectionId === 'matching-section') runMatchingEngine();
+            if(sectionId === 'admin-section') renderAdminSection();
+        };
+
+        window.showAlert = function(message, isError = false) {
+            const banner = document.getElementById('alert-banner');
+            banner.className = `p-4 rounded-2xl text-sm font-medium flex justify-between items-center shadow-sm ${isError ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`;
+            banner.innerHTML = `<span>${message}</span><button onclick="document.getElementById('alert-banner').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>`;
+            banner.classList.remove('hidden');
+        };
+
+        // Mock Auth Handlers
+        window.handleLoginMock = function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            currentUser = {
+                uid: "user_mock_" + Date.now(),
+                displayName: email.split('@')[0] + " (สมาชิก กทม.)",
+                need: "อาหาร",
+                skill: "ทั่วไป",
+                budget: 100,
+                location: "เขตพญาไท กรุงเทพฯ"
+            };
+            saveStateToStorage();
+            updateUserUI();
+            showAlert("เข้าสู่ระบบสำเร็จ!");
+            showSection('hero-section');
+        };
+
+        window.handleRegisterMock = function(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const location = document.getElementById('reg-location').value;
+            currentUser = {
+                uid: "user_reg_" + Date.now(),
+                displayName: name,
+                need: "",
+                skill: "",
+                budget: 0,
+                location: location
+            };
+            saveStateToStorage();
+            updateUserUI();
+            showAlert("ลงทะเบียนและเข้าสู่ระบบเรียบร้อยแล้ว!");
+            showSection('hero-section');
+        };
+
+        window.logoutMock = function() {
+            currentUser = null;
+            saveStateToStorage();
+            updateUserUI();
+            showAlert("ออกจากระบบแล้ว");
+            showSection('login-section');
+        };
+
+        // Save User Preferences
+        window.saveProfileSettings = function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            currentUser.need = document.getElementById('prof-need').value;
+            currentUser.skill = document.getElementById('prof-skill').value;
+            currentUser.budget = Number(document.getElementById('prof-budget').value);
+
+            saveStateToStorage();
+            showAlert("บันทึกข้อมูลส่วนตัวสำหรับระบบ Matching เรียบร้อยแล้ว");
+            runMatchingEngine();
+        };
+
+        // Create Listing Handler
+        window.handleCreateListing = function(e) {
+            e.preventDefault();
+            const newListing = {
+                id: "bkk_" + Date.now(),
+                userId: currentUser ? currentUser.uid : "guest",
+                authorName: currentUser ? currentUser.displayName : "ผู้ใช้งานทั่วไป",
+                title: document.getElementById('list-title').value,
+                type: document.getElementById('list-type').value,
+                price: Number(document.getElementById('list-price').value),
+                description: document.getElementById('list-desc').value,
+                location: document.getElementById('list-location').value,
+                contact: document.getElementById('list-contact').value,
+                lat: 13.7563 + (Math.random() - 0.5) * 0.05,
+                lng: 100.5018 + (Math.random() - 0.5) * 0.05
+            };
+
+            activeListings.unshift(newListing);
+            saveStateToStorage();
+            showAlert("บันทึกประกาศทรัพยากรใหม่ลงระบบเรียบร้อยแล้ว!");
+            document.getElementById('create-listing-form').reset();
+            showSection('listings-section');
+        };
+
+        // Render Listings
+        function fetchAndRenderListings() {
+            renderListings();
+            updateMyListingsCount();
+        }
+
+        window.renderListings = function() {
+            const filter = document.getElementById('filter-type').value;
+            const container = document.getElementById('listings-container');
+            container.innerHTML = '';
+
+            const filtered = activeListings.filter(item => filter === 'all' || item.type === filter);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">ยังไม่มีรายการประกาศในประเภทนี้</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-xs px-3 py-1 rounded-full font-bold bg-slate-100 text-slate-700">${getTypeLabel(item.type)}</span>
+                            <span class="text-sm font-bold ${item.price === 0 ? 'text-emerald-600' : 'text-slate-800'}">${item.price === 0 ? 'ฟรี / แบ่งปัน' : item.price + ' บาท'}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-lg mb-1 leading-snug">${item.title}</h3>
+                        <p class="text-slate-600 text-sm mb-4 line-clamp-2">${item.description}</p>
+                    </div>
+                    <div class="pt-4 border-t border-slate-100 text-xs text-slate-500 flex justify-between items-center">
+                        <span><i class="fa-solid fa-location-dot text-emerald-600 mr-1"></i>${item.location}</span>
+                        <button onclick="contactProvider('${item.authorName}', '${item.contact}')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-xl transition">
+                            <i class="fa-solid fa-message mr-1"></i> ติดต่อ
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        };
+
+        window.contactProvider = function(author, contact) {
+            alert(`ช่องทางติดต่อ คุณ${author}:\n\n${contact}\n\n*ระบบได้ทำการบันทึกสถานะการสนใจไว้เรียบร้อยแล้ว`);
+        };
+
+        // Deterministic Matching Engine
+        window.runMatchingEngine = function() {
+            const container = document.getElementById('matching-results');
+            const userNeed = currentUser?.need?.toLowerCase() || "";
+            const userBudget = currentUser?.budget || 0;
+
+            if (activeListings.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">ยังไม่มีข้อมูลทรัพยากรในระบบเพื่อนำมาประมวลผลจับคู่</div>`;
+                return;
+            }
+
+            const scoredListings = activeListings.map(item => {
+                let score = 35; // Base Score
+
+                if (userNeed && (item.title.toLowerCase().includes(userNeed) || item.description.toLowerCase().includes(userNeed))) {
+                    score += 40;
+                }
+                if (userBudget > 0 && item.price <= userBudget) {
+                    score += 20;
+                } else if (item.price === 0) {
+                    score += 15;
+                }
+                if (currentUser?.location && item.location.includes(currentUser.location)) {
+                    score += 10;
+                }
+
+                return { ...item, matchScore: Math.min(score, 98) };
+            });
+
+            scoredListings.sort((a, b) => b.matchScore - a.matchScore);
+
+            container.innerHTML = '';
+            scoredListings.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-3xl border border-slate-200/80 shadow-md flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="bg-emerald-100 text-emerald-800 font-extrabold text-sm px-3.5 py-1 rounded-full">
+                                <i class="fa-solid fa-chart-line mr-1"></i> ${item.matchScore}% เหมาะกับคุณ
+                            </span>
+                            <span class="text-xs text-slate-400 font-semibold">${getTypeLabel(item.type)}</span>
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-xl mb-2">${item.title}</h3>
+                        <p class="text-slate-600 text-sm mb-4 leading-relaxed">${item.description}</p>
+                        <div class="bg-slate-50 p-3.5 rounded-2xl text-xs text-slate-600 mb-4 space-y-1.5 border border-slate-100">
+                            <div><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i> ความตรงกัน: ตรงกับเงื่อนไขความต้องการในโปรไฟล์</div>
+                            <div><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i> ค่าใช้จ่าย: ${item.price} บาท (อยู่ในเกณฑ์งบประมาณ)</div>
+                        </div>
+                    </div>
+                    <button onclick="contactProvider('${item.authorName}', '${item.contact}')" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-2xl text-sm transition shadow">
+                        สนใจและติดต่อสื่อสาร
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        };
+
+        // Interactive Leaflet Map (Centered on Bangkok: 13.7563, 100.5018)
+        function initLeafletMap() {
+            if (leafletMap) return;
+
+            leafletMap = L.map('map').setView([13.7563, 100.5018], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(leafletMap);
+
+            activeListings.forEach(item => {
+                if (item.lat && item.lng) {
+                    const marker = L.marker([item.lat, item.lng]).addTo(leafletMap);
+                    marker.bindPopup(`<b>${item.title}</b><br>${item.location}<br>ราคา: ${item.price} บาท`);
+                }
+            });
+        }
+
+        // Admin Management Panel
+        function renderAdminSection() {
+            const listContainer = document.getElementById('admin-listings-list');
+            listContainer.innerHTML = '';
+
+            activeListings.forEach((item, index) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = "bg-white p-4 rounded-2xl border border-slate-200/80 flex justify-between items-center";
+                itemEl.innerHTML = `
+                    <div>
+                        <div class="font-bold text-slate-800">${item.title}</div>
+                        <div class="text-xs text-slate-500">ผู้ประกาศ: ${item.authorName} | ประเภท: ${item.type}</div>
+                    </div>
+                    <button onclick="deleteListingByIndex(${index})" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold px-3 py-1.5 rounded-xl text-xs transition">
+                        <i class="fa-solid fa-trash mr-1"></i> ลบประกาศ
+                    </button>
+                `;
+                listContainer.appendChild(itemEl);
+            });
+        }
+
+        window.deleteListingByIndex = function(index) {
+            if (confirm('ต้องการลบประกาศรายการนี้หรือไม่?')) {
+                activeListings.splice(index, 1);
+                saveStateToStorage();
+                showAlert("ลบรายการออกจากระบบเรียบร้อยแล้ว");
+                renderAdminSection();
+            }
+        };
+
+        function updateMyListingsCount() {
+            if (!currentUser) return;
+            const count = activeListings.filter(item => item.userId === currentUser.uid).length;
+            const countEl = document.getElementById('dash-my-listings-count');
+            if (countEl) countEl.innerText = count;
+        }
+
+        function getTypeLabel(type) {
+            const map = {
+                product: 'สินค้า/อาหาร',
+                job: 'การจ้างงาน',
+                skill: 'ทักษะ/ความรู้',
+                service: 'บริการ',
+                exchange: 'การแลกเปลี่ยน'
+            };
+            return map[type] || 'ทั่วไป';
+        }
+    </script>
+</body>
+</html>
